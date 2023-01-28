@@ -16,11 +16,8 @@ public class MMonster : MonoBehaviour
     public void InitVisual( Color col )
     {
         skinColor = col;
-
         skinRender.color = col;
     }
-
-
 
     [BoxGroup("Eyes")]
     public Transform eyeL;
@@ -38,7 +35,7 @@ public class MMonster : MonoBehaviour
 
     public void SetupEye()
     {
-        angleL = Random.RandomRange(0, 360f);
+        angleL = Random.Range(0, 360f);
         angleR = angleL + 180f;
     }
 
@@ -85,8 +82,8 @@ public class MMonster : MonoBehaviour
 
     public void SetupMove()
     {
-        tempAngle = Random.RandomRange(0, 360f);
-        turnNoise = Random.RandomRange(0, 1000f);
+        tempAngle = Random.Range(0, 360f);
+        turnNoise = Random.Range(0, 1000f);
     }
 
     public void UpdateMove()
@@ -94,7 +91,11 @@ public class MMonster : MonoBehaviour
         // constrain in ground
         var pos = transform.position;
 
-        tempAngle += (Mathf.PerlinNoise(turnFrequency * Time.deltaTime + turnNoise , 0 ) * 2f - 1f ) * turnSpeed * Time.deltaTime;
+        tempFratSpeedUp = Mathf.Lerp(tempFratSpeedUp, 0, Time.deltaTime * 1.5f);
+
+        var currentTurnSpeed = turnSpeed + tempFratSpeedUp;
+
+        tempAngle += (Mathf.PerlinNoise(turnFrequency * Time.deltaTime + turnNoise , 0 ) * 2f - 1f ) * currentTurnSpeed * Time.deltaTime;
 
         Vector2 turnDir = new Vector2(Mathf.Cos(tempAngle*Mathf.Deg2Rad),Mathf.Sin(tempAngle*Mathf.Deg2Rad));
 
@@ -119,12 +120,11 @@ public class MMonster : MonoBehaviour
 
         transform.localScale = new Vector3( Mathf.Sign(tempDir.x) * 1.0f , 1.0f , 1.0f );
 
-        tempFratSpeedUp = Mathf.Lerp(tempFratSpeedUp, 0, Time.deltaTime * 1.5f);
-
         transform.position += new Vector3(tempDir.x, tempDir.y, 0) * ( tempSpeed + tempFratSpeedUp ) * Time.deltaTime;
 
         Debug.DrawRay(transform.position, tempDir.normalized * 2f);
 
+        //TODO: There is a bug when Monster collide with the edge, need to fix that
 
     }
 
@@ -155,7 +155,7 @@ public class MMonster : MonoBehaviour
 
     public void Frat()
     {
-        var sound = sounds[Random.RandomRange(0,sounds.Count)];
+        var sound = sounds[Random.Range(0,sounds.Count)];
 
         AudioSource.PlayClipAtPoint(sound, transform.position);
 
@@ -163,27 +163,34 @@ public class MMonster : MonoBehaviour
         // frat.transform.parent = transform;
         frat.transform.position = transform.position;
         // frat.transform.localScale = transform.localScale;
+        MFart fart = frat.GetComponent<MFart>();
+        fart.Setup(this, fratAnimDuration);
+        Farts.Add(fart);
 
-        var fratSprite = frat.GetComponentInChildren<SpriteRenderer>();
-        fratSprite.transform.DOMove(tempDir.normalized * fratAnimLocalX, fratAnimDuration).SetRelative(true).SetEase(Ease.OutCubic);
+        frat.transform.DOMove(tempDir.normalized * fratAnimLocalX, fratAnimDuration).SetRelative(true).SetEase(Ease.OutCubic);
 
-        var seq = DOTween.Sequence();
+        /*var seq = DOTween.Sequence();
         seq.Append(fratSprite.DOFade(0, 0));
         seq.Append(fratSprite.DOFade(0.5f, fratAnimDuration * 0.1f));
         seq.AppendInterval(fratAnimDuration * 0.7f);
-        seq.Append(fratSprite.DOFade(0, fratAnimDuration * 0.2f));
+        seq.Append(fratSprite.DOFade(0, fratAnimDuration * 0.2f).SetDelay(dur - fratAnimDuration));
         seq.AppendCallback(delegate () {
+            Farts.Remove(fart);
             GameObject.Destroy(frat,2f);
+        });*/
+
+        DOVirtual.DelayedCall(fratAnimDuration, () =>
+        {
+            Farts.Remove(fart);
+            GameObject.Destroy(frat);
         });
 
         tempFratSpeedUp = fratSpeedUp;
-
-
-
     }
+
     public void SetupFrat()
     {
-        fratTimer = Random.RandomRange(0, fratInterval.y);
+        fratTimer = Random.Range(0, fratInterval.y);
     }
 
 
@@ -193,11 +200,15 @@ public class MMonster : MonoBehaviour
 
         if ( fratTimer < 0  )
         {
-            fratTimer = Random.RandomRange(fratInterval.x, fratInterval.y);
+            fratTimer = Random.Range(fratInterval.x, fratInterval.y);
             Frat();
         }
     }
 
+    public void SetupWordInfo()
+    {
+        CurrentWordListIndex = Random.Range(0, Words.Count);
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -208,6 +219,8 @@ public class MMonster : MonoBehaviour
         SetupMove();
 
         SetupFrat();
+
+        SetupWordInfo();
     }
 
     // Update is called once per frame
@@ -220,5 +233,62 @@ public class MMonster : MonoBehaviour
         UpdateFrat();
     }
 
+    //-------------------------------------------------------------------------------------------------------------------------------------
+    [HideInInspector] public List<MFart> Farts;
+    [HideInInspector] int CurrentWordListIndex;
+    [SerializeField] List<WordInfo> Words;
 
+    public void CallOnClicked()
+    {
+        //If a fart is selected and monster gets selected, kill Monster
+        bool isFartSelected = false;
+        foreach (var fart in Farts)
+        {
+            if(fart.IsSelected)
+            {
+                isFartSelected = true;
+                break;
+            }
+        }
+        if(isFartSelected)
+        {
+            MWorldManager.Instance.CallKill(this);
+            foreach(var fart in Farts)
+            {
+                Destroy(fart.gameObject);
+            }
+        }  
+    }
+
+    /// <summary>
+    /// Set states for all monster's farts
+    /// </summary>
+    /// <param name="seletedFart"></param>
+    public void SetFartsState(MFart seletedFart = null)
+    {
+        foreach(var fart in Farts)
+        {
+            if(seletedFart!= null && fart == seletedFart)
+            {
+                fart.SetState(true);
+                continue;
+            }
+            fart.SetState(false);
+        }
+    }
+
+    public string GetRandomWord()
+    {
+        var worldIndex = Random.Range(0, Words[CurrentWordListIndex].WordList.Count);
+        return Words[CurrentWordListIndex].WordList[worldIndex];
+    }
+    //-------------------------------------------------------------------------------------------------------------------------------------
+}
+
+
+[System.Serializable]
+public struct WordInfo
+{
+    public string Label;
+    public List<string> WordList;
 }
