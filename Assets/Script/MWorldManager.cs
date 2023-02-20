@@ -38,9 +38,12 @@ public class MWorldManager : MonoBehaviour
 
     // game stats 
     private int failCount = 0; // how many times that a player fail to match P with Monster
+    private MFart selectedFart; // the fart that is currently selected 
 
     [HideInInspector]
     public List<MMonster> Monsters;
+
+
 
     public void CallStartGame()
     {
@@ -76,6 +79,7 @@ public class MWorldManager : MonoBehaviour
     {
         //Only 1 fart is allowed to be selected
         //Debug.Log("Select farts");
+        selectedFart = fart;
         foreach(var m in Monsters)
         {
             if (m == monster)
@@ -98,6 +102,8 @@ public class MWorldManager : MonoBehaviour
         }
 
         // reset the wait status of all monsters 
+        selectedFart.SetState(false);
+        //selectedFart = null;
         foreach(var m in Monsters)
         {
             m.SetWaitForFart(false);
