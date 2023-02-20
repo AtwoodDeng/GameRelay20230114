@@ -36,6 +36,9 @@ public class MWorldManager : MonoBehaviour
 
     public Vector2 groundSize = new Vector2(9.5f, 4.5f);
 
+    // game stats 
+    private int failCount = 0; // how many times that a player fail to match P with Monster
+
     [HideInInspector]
     public List<MMonster> Monsters;
 
@@ -72,6 +75,7 @@ public class MWorldManager : MonoBehaviour
     public void CallOnSelectedFart(MMonster monster, MFart fart)
     {
         //Only 1 fart is allowed to be selected
+        //Debug.Log("Select farts");
         foreach(var m in Monsters)
         {
             if (m == monster)
@@ -80,7 +84,24 @@ public class MWorldManager : MonoBehaviour
             }else
             {
                 m.SetFartsState(null);
+
             }
         }
+    }
+
+    public void CallMatchFail(MMonster monster)
+    {
+        // when the match fails 
+        failCount += 1;
+        if(failCount >= 7){
+            GameManager.Instance.CallUnlockRainbow();
+        }
+
+        // reset the wait status of all monsters 
+        foreach(var m in Monsters)
+        {
+            m.SetWaitForFart(false);
+        }
+        
     }
 }
