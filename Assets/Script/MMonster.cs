@@ -79,6 +79,9 @@ public class MMonster : MonoBehaviour
     public float worldEdge = 0.5f;
 
 
+    private bool bWaitForFart = false;
+
+
 
     public void SetupMove()
     {
@@ -210,6 +213,15 @@ public class MMonster : MonoBehaviour
         CurrentWordListIndex = Random.Range(0, Words.Count);
     }
 
+    public void ChangeColor()
+    {
+        // random color 
+        Color randColor = Random.ColorHSV(0f, 1f, 1f, 1f, 0.5f, 1f);
+        //skinColor = col; // not changing skin color to add confusion 
+        skinRender.color = randColor;
+    }
+
+
     // Start is called before the first frame update
     void Start()
     {
@@ -241,6 +253,7 @@ public class MMonster : MonoBehaviour
     public void CallOnClicked()
     {
         //If a fart is selected and monster gets selected, kill Monster
+        // if not monster changes color
         bool isFartSelected = false;
         foreach (var fart in Farts)
         {
@@ -257,24 +270,44 @@ public class MMonster : MonoBehaviour
             {
                 Destroy(fart.gameObject);
             }
-        }  
+        }else{
+            
+            // change color of monster
+            // TODO: change color only when it's the wrong fart
+            if(bWaitForFart)
+            {
+                Debug.Log("Not me!! Change color");
+                ChangeColor();
+                MWorldManager.Instance.CallMatchFail(this);
+            }
+            
+
+        }
     }
 
     /// <summary>
     /// Set states for all monster's farts
     /// </summary>
-    /// <param name="seletedFart"></param>
-    public void SetFartsState(MFart seletedFart = null)
+    /// <param name="selectedFart"></param>
+    public void SetFartsState(MFart selectedFart = null)
     {
+        Debug.Log("fart selected!" );
         foreach(var fart in Farts)
         {
-            if(seletedFart!= null && fart == seletedFart)
+            bWaitForFart = true;
+            if(selectedFart != null && fart == selectedFart)
             {
                 fart.SetState(true);
-                continue;
+                continue ;
+                 
             }
             fart.SetState(false);
         }
+    }
+
+    public void SetWaitForFart(bool waitState)
+    {
+        bWaitForFart = waitState;
     }
 
     public string GetRandomWord()

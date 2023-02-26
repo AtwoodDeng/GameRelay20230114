@@ -10,5 +10,6 @@ public class MCollider : MonoBehaviour
     void OnMouseDown()
     {
         OnClicked?.Invoke();
+        //Debug.Log("click?");
     }
 }

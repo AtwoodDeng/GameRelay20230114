@@ -24,11 +24,18 @@ public class GameManager : MonoBehaviour
     }
     [SerializeField] GameObject SplashScreen;
     [SerializeField] GameObject ScoreScreen;
+    [SerializeField] GameObject RainbowScreen;
+
+    private bool b_rainbow_unlocked = false;
+    private MTimer fadeTimer;
 
     public void Start()
     {
         SplashScreen.SetActive(true);
         ScoreScreen.SetActive(false);
+        RainbowScreen.SetActive(false);
+
+        fadeTimer = new MTimer();
     }
 
     public void CallStartGame()
@@ -41,4 +48,27 @@ public class GameManager : MonoBehaviour
     {
         ScoreScreen.SetActive(true);
     }
+
+    public void CallUnlockRainbow()
+    {
+        if(!b_rainbow_unlocked){
+            b_rainbow_unlocked = true;
+            RainbowScreen.SetActive(true);
+            fadeTimer.setActive(3);
+        }
+        
+    }
+
+    public void Update()
+    {
+        if(fadeTimer.b_timer_active)
+        {
+            fadeTimer.UpdateTimer();
+            if(fadeTimer.b_timer_end){
+                RainbowScreen.SetActive(false);
+            }
+        }
+        
+    }
+
 }

@@ -9,6 +9,7 @@ public class MFart : MonoBehaviour
     [SerializeField] TextMesh WordText;
 
     MMonster monster;
+    Color fartColor;
 
     [HideInInspector] public bool IsSelected = false;
 
@@ -16,6 +17,7 @@ public class MFart : MonoBehaviour
     {
         this.monster = monster;
         WordText.text = monster.GetRandomWord();
+        fartColor = monster.skinColor;
 
         //Set it the same color as the monster color
         Color targetColor = monster.skinColor;
